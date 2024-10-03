@@ -1,5 +1,6 @@
 #include <AccelStepper.h>
 #include <TMCStepper.h>
+#include <math.h>
 
 // Define pin connections
 #define EN_PIN           8 // Enable pin
@@ -21,6 +22,10 @@ TMC2209Stepper driver3(&Serial1, R_SENSE);
 AccelStepper stepper1(AccelStepper::DRIVER, STEP_PIN_1, DIR_PIN_1);
 AccelStepper stepper2(AccelStepper::DRIVER, STEP_PIN_2, DIR_PIN_2);
 AccelStepper stepper3(AccelStepper::DRIVER, STEP_PIN_3, DIR_PIN_3);
+
+// Define manipulator dimensions
+const float L1 = 100.0; // Length of first link
+const float L2 = 100.0; // Length of second link
 
 void setup() {
   Serial.begin(115200); // Initialize serial communication
@@ -56,13 +61,44 @@ void setup() {
 
 void loop() {
   // Example control loop for the 3 RPS Parallel Manipulator
-  // Move each stepper motor to a target position
-  stepper1.moveTo(1000);
-  stepper2.moveTo(1000);
-  stepper3.moveTo(1000);
+
+  // Specify target end-effector position (x, y, z)
+  float x = 50.0;
+  float y = 50.0;
+  float z = 50.0;
+
+  // Calculate joint angles using inverse kinematics
+  float theta1, theta2, theta3;
+  inverseKinematics(x, y, z, theta1, theta2, theta3);
+
+  // Convert joint angles to stepper motor positions
+  long pos1 = angleToSteps(theta1);
+  long pos2 = angleToSteps(theta2);
+  long pos3 = angleToSteps(theta3);
+
+  // Move each stepper motor to the calculated position
+  stepper1.moveTo(pos1);
+  stepper2.moveTo(pos2);
+  stepper3.moveTo(pos3);
 
   // Run the steppers to the target positions
   stepper1.run();
   stepper2.run();
   stepper3.run();
+}
+
+// Function to calculate inverse kinematics
+void inverseKinematics(float x, float y, float z, float &theta1, float &theta2, float &theta3) {
+  // Placeholder calculations for inverse kinematics
+  // Replace with actual calculations for your manipulator
+  theta1 = atan2(y, x);
+  theta2 = atan2(z, sqrt(x*x + y*y));
+  theta3 = atan2(y, x); // Example placeholder calculation
+}
+
+// Function to convert angle to stepper motor steps
+long angleToSteps(float angle) {
+  // Placeholder conversion for angle to steps
+  // Replace with actual conversion based on your stepper motor configuration
+  return angle * 100;
 }
