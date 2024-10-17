@@ -19,7 +19,7 @@ AccelStepper stepperC(1, 5, 6);  //(driver type, STEP, DIR) Driver C
 MultiStepper steppers;           // Create instance of MultiStepper
 
 //stepper motor variables
-int pos[3];                                            // An array to store the target positions for each stepper motor
+long int pos[3];                                            // An array to store the target positions for each stepper motor
 int ENA = 0;                                           //enable pin for the drivers
 double angOrig = 206.662752199;                        //original angle that each leg starts at
 double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 20;  //the speed of the stepper motor and the speed amplifying constant
