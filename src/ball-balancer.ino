@@ -113,6 +113,21 @@ void PID(double setpointX, double setpointY) {
       out[i] = kp * error[i] + ki * integr[i] + kd * deriv[i];                                     //sets output
       out[i] = constrain(out[i], -0.25, 0.25);                                                     //contrains output to have a magnitude of 0.25
     }
+// If tuning, adjust kp until oscillation is observed
+    if (tuning) {
+      // Implement logic to detect oscillation and measure period Pc
+      // For simplicity, let's assume Kc and Pc are found manually
+      Kc = 2.0; // Example critical gain
+      Pc = 1.5; // Example oscillation period
+
+      tuning = false;
+
+      // Apply Ziegler-Nichols rules
+      kp = 0.6 * Kc;
+      ki = 1.2 * Kc / Pc;
+      kd = 0.075 * Kc * Pc;
+    }
+
     //calculates stepper motor speeds
     for (int i = 0; i < 3; i++) {
       speedPrev[i] = speed[i];                                                                                                           //sets previous speed
