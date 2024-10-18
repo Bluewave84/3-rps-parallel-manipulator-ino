@@ -28,8 +28,12 @@ double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 20;  //the speed of the steppe
 double Xoffset = 500;  //X offset for the center position of the touchpad
 double Yoffset = 500;  //Y offset for the center position of the touchpad
 
+// Initial settings for Ziegler-Nichols method
+double kp = 1.0, ki = 0.0, kd = 0.0;
+bool tuning = true;
+double Kc, Pc;
 //PID variables
-double kp = 4E-4, ki = 2E-6, kd = 7E-3;                                                       //PID constants
+//double kp = 4E-4, ki = 2E-6, kd = 7E-3;                                                       //PID constants
 double error[2] = { 0, 0 }, errorPrev[2], integr[2] = { 0, 0 }, deriv[2] = { 0, 0 }, out[2];  //PID terms for X and Y directions
 long timeI;                                                                           //variables to capture initial times
 
