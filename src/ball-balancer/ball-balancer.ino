@@ -9,18 +9,26 @@
 #include <TouchScreen.h>
 #include <math.h>
 
+#define EN_PIN           8 // Enable pin
+#define DIR_PIN_1        5 // Direction pin for motor 1
+#define STEP_PIN_1       2 // Step pin for motor 1
+#define DIR_PIN_2        6 // Direction pin for motor 2
+#define STEP_PIN_2       3 // Step pin for motor 2
+#define DIR_PIN_3        7 // Direction pin for motor 3
+#define STEP_PIN_3       4 // Step pin for motor 3
+
 Machine machine(2, 3.125, 1.75, 3.669291339);     //(d, e, f, g) object to define the lengths of the machine
-TouchScreen ts = TouchScreen(A1, A0, A3, A2, 0);  //touch screen pins (XGND, YGND, X5V, Y5V)
+TouchScreen ts = TouchScreen(A0, A1, A2, A3, 300);  //touch screen pins (XGND, YGND, X5V, Y5V)
 
 //stepper motors
-AccelStepper stepperA(1, 1, 2);  //(driver type, STEP, DIR) Driver A
-AccelStepper stepperB(1, 3, 4);  //(driver type, STEP, DIR) Driver B
-AccelStepper stepperC(1, 5, 6);  //(driver type, STEP, DIR) Driver C
+AccelStepper stepperA(1, STEP_PIN_1, DIR_PIN_1);  //(driver type, STEP, DIR) Driver A
+AccelStepper stepperB(1, STEP_PIN_2, DIR_PIN_2);  //(driver type, STEP, DIR) Driver B
+AccelStepper stepperC(1, STEP_PIN_3, DIR_PIN_3);  //(driver type, STEP, DIR) Driver C
 MultiStepper steppers;           // Create instance of MultiStepper
 
 //stepper motor variables
-int pos[3];                                            // An array to store the target positions for each stepper motor
-int ENA = 0;                                           //enable pin for the drivers
+long pos[3];                                            // An array to store the target positions for each stepper motor
+int ENA = EN_PIN;                                           //enable pin for the drivers
 double angOrig = 206.662752199;                        //original angle that each leg starts at
 double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 20;  //the speed of the stepper motor and the speed amplifying constant
 

@@ -19,7 +19,7 @@ AccelStepper stepperC(1, STEP_PIN_3, DIR_PIN_3);  //(driver type, STEP, DIR) Dri
 MultiStepper steppers;           // Create instance of MultiStepper
 
 //stepper motor variables
-int pos[3] = {400, 400, 400};                            // An array to store the target positions for each stepper motor
+long pos[3] = {400, 400, 400};                            // An array to store the target positions for each stepper motor
 int ENA = EN_PIN;                           //enable pin for the drivers
 
 void setup() {
