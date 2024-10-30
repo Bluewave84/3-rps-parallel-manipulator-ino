@@ -31,7 +31,6 @@ long pos[3];                                            // An array to store the
 int ENA = EN_PIN;                                           //enable pin for the drivers
 double angOrig = 206.662752199;                        //original angle that each leg starts at
 double speed[3] = { 0, 0, 0 }, speedPrev[3], ks = 20;  //the speed of the stepper motor and the speed amplifying constant
-
 //touch screen variables
 double Xoffset = 500;  //X offset for the center position of the touchpad
 double Yoffset = 500;  //Y offset for the center position of the touchpad
@@ -42,7 +41,7 @@ double error[2] = { 0, 0 }, errorPrev[2], integr[2] = { 0, 0 }, deriv[2] = { 0, 
 long timeI;                                                                           //variables to capture initial times
 
 //Other Variables
-double angToStep = 3200 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
+double angToStep = 800 / 360;  //angle to step conversion factor (steps per degree) for 16 microsteps or 3200 steps/rev
 bool detected = 0;              //this value is 1 when the ball is detected and the value is 0 when the ball in not detected
 
 void setup() {
@@ -117,6 +116,10 @@ void PID(double setpointX, double setpointY) {
       out[i] = kp * error[i] + ki * integr[i] + kd * deriv[i];                                     //sets output
       out[i] = constrain(out[i], -0.25, 0.25);                                                     //contrains output to have a magnitude of 0.25
     }
+
+
+
+
     //calculates stepper motor speeds
     for (int i = 0; i < 3; i++) {
       speedPrev[i] = speed[i];                                                                                                           //sets previous speed
