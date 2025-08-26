@@ -1,0 +1,210 @@
+import { RobotKinematics } from './robotKinematics';
+
+// Types
+interface ServoMotor {
+    angle: number;
+    actuation_range: number;
+    setPulseWidthRange(min: number, max: number): void;
+}
+
+interface ServoController {
+    servo: ServoMotor[];
+}
+
+// Constants
+const SERVO_CONFIG = {
+    MIN_ANGLE: 19,
+    MAX_ANGLE: 90,
+    ACTUATION_RANGE: 270,
+    PULSE_WIDTH: {
+        MIN: 500,
+        MAX: 2500
+    }
+} as const;
+
+export class RobotController {
+    private readonly robot: RobotKinematics;
+    private readonly controller: ServoController;
+    private readonly servo1: ServoMotor;
+    private readonly servo2: ServoMotor;
+    private readonly servo3: ServoMotor;
+
+    constructor(
+        model: RobotKinematics,
+        servoController: ServoController
+    ) {
+        this.robot = model;
+        this.controller = servoController;
+
+        // Initialize servos with specific channel numbers
+        this.servo1 = this.controller.servo[13];  // Original channel 13
+        this.servo2 = this.controller.servo[15];  // Original channel 15
+        this.servo3 = this.controller.servo[14];  // Original channel 14
+
+        // Configure servos
+        [this.servo1, this.servo2, this.servo3].forEach(servo => {
+            servo.actuation_range = SERVO_CONFIG.ACTUATION_RANGE;
+            servo.setPulseWidthRange(SERVO_CONFIG.PULSE_WIDTH.MIN, SERVO_CONFIG.PULSE_WIDTH.MAX);
+        });
+
+        this.initialize();
+    }
+
+    /**
+     * Clamps a value between lower and upper bounds
+     */
+    private clamp(value: number, lower = SERVO_CONFIG.MIN_ANGLE, upper = SERVO_CONFIG.MAX_ANGLE): number {
+        return Math.max(lower, Math.min(value, upper));
+    }
+
+    /**
+     * Initializes the robot to its starting position
+     */
+    public async initialize(): Promise<void> {
+        console.log("Initializing ...");
+        
+        this.setMotorAngles(54, 54, 54);
+        await this.interpolateTime([19, 19, 19], { duration: 0.25 });
+        await this.delay(1000);
+        await this.gotoTimeSpherical(0, 0, 8.26, { duration: 0.25 });
+        await this.delay(1000);
+        
+        console.log("Initialized!");
+    }
+
+    /**
+     * Sets the angles for all three motors with calibration offsets
+     */
+    private setMotorAngles(theta1: number, theta2: number, theta3: number): void {
+        // Calibrate offsets
+        this.servo1.angle = this.clamp(theta1) - 4;  // Offset adjustment
+        this.servo2.angle = this.clamp(theta2);
+        this.servo3.angle = this.clamp(theta3);
+    }
+
+    interface InterpolationOptions {
+        steps?: number;
+        duration?: number;
+        individualDurations?: number[];
+    }
+
+    /**
+     * Interpolates motor angles over time
+     */
+    public async interpolateTime(
+        targetAngles: [number, number, number],
+        options: InterpolationOptions = {}
+    ): Promise<void> {
+        const {
+            duration = 0.3,
+            individualDurations = [duration, duration, duration],
+            steps = 100
+        } = options;
+
+        const currentAngles: [number, number, number] = [
+            this.servo1.angle,
+            this.servo2.angle,
+            this.servo3.angle
+        ];
+
+        const maxDuration = Math.max(...individualDurations);
+        const actualSteps = Math.max(1, Math.floor(maxDuration / 0.01));
+
+        for (let i = 0; i <= actualSteps; i++) {
+            const t = i * maxDuration / actualSteps;
+            const angles = currentAngles.map((current, index) => {
+                const target = targetAngles[index];
+                const d = individualDurations[index];
+                return d > 0 
+                    ? current + (target - current) * Math.min(t / d, 1)
+                    : target;
+            });
+
+            this.setMotorAngles(...angles as [number, number, number]);
+            await this.delay((maxDuration / actualSteps) * 1000);
+        }
+    }
+
+    /**
+     * Controls robot movement using spherical coordinates
+     */
+    public async gotoTimeSpherical(
+        theta: number,
+        phi: number,
+        h: number,
+        options: { duration?: number } = {}
+    ): Promise<void> {
+        const { duration = 0.5 } = options;
+
+        this.robot.solveInverseKinematicsSpherical(theta, phi, h);
+        const targetAngles: [number, number, number] = [
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta1),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta2),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta3)
+        ];
+
+        await this.interpolateTime(targetAngles, { duration });
+    }
+
+    /**
+     * Controls robot movement using vector coordinates without interpolation
+     */
+    public gotoNTimeVector(a: number, b: number, c: number, h: number): void {
+        this.robot.solveInverseKinematicsVector(a, b, c, h);
+        const targetAngles: [number, number, number] = [
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta1),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta2),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta3)
+        ];
+        this.setMotorAngles(...targetAngles);
+    }
+
+    /**
+     * Demonstrates a circular dance movement pattern
+     */
+    public async dance1(): Promise<void> {
+        await this.gotoTimeVector(0.258819045103, 0, 0.965925826289, 8);
+
+        for (let cycle = 0; cycle < 3; cycle++) {
+            for (let i = 0; i < 100; i++) {
+                const t = (2 * Math.PI / 100) * i;
+                const x = Math.cos(Math.PI * 5 / 12) * Math.cos(t);
+                const y = Math.cos(Math.PI * 5 / 12) * Math.sin(t);
+                const z = Math.sin(Math.PI * 5 / 12);
+                
+                console.log(x, y, z, Math.sqrt(x**2 + y**2 + z**2));
+                this.gotoNTimeVector(x, y, z, 8);
+                await this.delay(10); // 1/100 second in milliseconds
+            }
+        }
+
+        await this.gotoTimeVector(0, 0, 1, 8);
+    }
+
+    private toDegreesFromRadians(radians: number): number {
+        return radians * (180 / Math.PI);
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    private async gotoTimeVector(
+        a: number,
+        b: number,
+        c: number,
+        h: number,
+        options: { duration?: number } = {}
+    ): Promise<void> {
+        const { duration = 0.5 } = options;
+
+        this.robot.solveInverseKinematicsVector(a, b, c, h);
+        const targetAngles: [number, number, number] = [
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta1),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta2),
+            this.toDegreesFromRadians(Math.PI * 0.5 - this.robot.theta3)
+        ];
+
+        await this.interpolateTime(targetAngles, { duration });
+    }
+}
